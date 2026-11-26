@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Insentif & Ritase Karyawan</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 14px;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+        .login-box {
+            max-width: 420px;
+            margin: 0 auto;
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 18px;
+            font-size: 20px;
+        }
+        .form-group {
+            margin-bottom: 14px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+        button {
+            width: 100%;
+            padding: 11px;
+            background-color: #27ae60;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+        button:hover {
+            background-color: #219150;
+        }
+        .btn-logout {
+            background-color: #e74c3c;
+            max-width: 160px;
+            margin-top: 16px;
+            padding: 9px 14px;
+            font-size: 14px;
+        }
+        .btn-logout:hover {
+            background-color: #c0392b;
+        }
+        .error {
+            color: #c0392b;
+            text-align: center;
+            margin-top: 12px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .loading {
+            text-align: center;
+            color: #2980b9;
+            font-weight: bold;
+            display: none;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+        #dashboard-section {
+            display: none;
+        }
+        .profile-box {
+            background: #eafaf1;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid #27ae60;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            table-layout: auto;
+        }
+        th, td {
+            border: 1px solid #dcdcdc;
+            padding: 6px 5px;
+            text-align: center;
+            word-wrap: break-word;
+        }
+        th {
+            background-color: #2c3e50;
+            color: #ffffff;
+            font-size: 11px;
+            line-height: 1.25;
+        }
+        td.text-left {
+            text-align: left;
+        }
+        td.num {
+            text-align: right;
+            white-space: nowrap;
+        }
+        td.highlight {
+            background-color: #eafaf1;
+            font-weight: bold;
+            color: #1e8449;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- HALAMAN LOGIN -->
+    <div id="login-section" class="login-box">
+        <h2>Login Cek Insentif & Ritase</h2>
+        <div class="form-group">
+            <label for="nik">NIK</label>
+            <input type="text" id="nik" placeholder="Masukkan NIK Anda" required>
+        </div>
+        <div class="form-group">
+            <label for="tgl_lahir">Tanggal Lahir</label>
+            <input type="date" id="tgl_lahir" required>
+        </div>
+        <button onclick="prosesLogin()">Masuk / Cek Data</button>
+        <div id="loading" class="loading">Sedang mengambil data...</div>
+        <div id="error-msg" class="error"></div>
+    </div>
+
+    <!-- HALAMAN DASHBOARD -->
+    <div id="dashboard-section">
+        <h2>Laporan Ritase & Insentif Karyawan</h2>
+        <div class="profile-box">
+            <strong>NIK:</strong> <span id="disp-nik"></span> &nbsp;|&nbsp;
+            <strong>Nama:</strong> <span id="disp-nama"></span> &nbsp;|&nbsp;
+            <strong>Departemen:</strong> <span id="disp-departemen"></span>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>NIK</th>
+                        <th>Nama</th>
+                        <th>Area<br>Kerja</th>
+                        <th>Ritase</th>
+                        <th>Tarif<br>165</th>
+                        <th>Tarif<br>600</th>
+                        <th>Tarif<br>900</th>
+                        <th>Ins<br>Bruto</th>
+                        <th>ATR</th>
+                        <th>Ded/Add</th>
+                        <th>Ins<br>Final</th>
+                    </tr>
+                </thead>
+                <tbody id="tabel-body"></tbody>
+            </table>
+        </div>
+
+        <button class="btn-logout" onclick="logout()">Keluar (Logout)</button>
+    </div>
+</div>
+
+<script>
+    // GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA (DIAKHIRI /exec)
+    const SCRIPT_URL = "TEMPEL_URL_APPS_SCRIPT_DISINI";
+
+    function prosesLogin() {
+        const nik = document.getElementById("nik").value.trim();
+        const tglLahir = document.getElementById("tgl_lahir").value.trim();
+        const errorMsg = document.getElementById("error-msg");
+        const loading = document.getElementById("loading");
+
+        if (!nik || !tglLahir) {
+            errorMsg.innerText = "Harap isi NIK dan Tanggal Lahir terlebih dahulu.";
+            return;
+        }
+
+        if (!SCRIPT_URL || SCRIPT_URL === "TEMPEL_URL_APPS_SCRIPT_DISINI") {
+            errorMsg.innerText = "URL Apps Script belum diisi di dalam file index.html.";
+            return;
+        }
+
+        errorMsg.innerText = "";
+        loading.style.display = "block";
+
+        const urlLengkap = `${SCRIPT_URL}?nik=${encodeURIComponent(nik)}&tgl_lahir=${encodeURIComponent(tglLahir)}`;
+
+        fetch(urlLengkap)
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = "none";
+                if (data.status === "error") {
+                    errorMsg.innerText = data.message;
+                } else {
+                    tampilkanDashboard(data);
+                }
+            })
+            .catch(error => {
+                loading.style.display = "none";
+                errorMsg.innerText = "Terjadi kesalahan koneksi. Pastikan URL Apps Script benar.";
+                console.error(error);
+            });
+    }
+
+    function tampilkanDashboard(data) {
+        document.getElementById("login-section").style.display = "none";
+        document.getElementById("dashboard-section").style.display = "block";
+
+        document.getElementById("disp-nik").innerText = data.user.nik || "-";
+        document.getElementById("disp-nama").innerText = data.user.nama || "-";
+        document.getElementById("disp-departemen").innerText = data.user.departemen || "-";
+
+        const tbody = document.getElementById("tabel-body");
+        tbody.innerHTML = "";
+
+        if (!data.laporan || data.laporan.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="11">Belum ada data laporan untuk NIK ini.</td></tr>`;
+            return;
+        }
+
+        data.laporan.forEach(item => {
+            const row = `<tr>
+                <td>${item.nik || "-"}</td>
+                <td class="text-left">${item.nama || "-"}</td>
+                <td>${item.area_kerja || "-"}</td>
+                <td>${item.ritase || "0"}</td>
+                <td class="num">${item.tarif_165 || "0"}</td>
+                <td class="num">${item.tarif_600 || "0"}</td>
+                <td class="num">${item.tarif_900 || "0"}</td>
+                <td class="num">${item.ins_bruto || "0"}</td>
+                <td class="num">${item.atr || "0"}</td>
+                <td class="num">${item.ded_add || "0"}</td>
+                <td class="num highlight">${item.ins_final || "0"}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    function logout() {
+        document.getElementById("nik").value = "";
+        document.getElementById("tgl_lahir").value = "";
+        document.getElementById("error-msg").innerText = "";
+        document.getElementById("dashboard-section").style.display = "none";
+        document.getElementById("login-section").style.display = "block";
+    }
+</script>
+
+</body>
+</html>
